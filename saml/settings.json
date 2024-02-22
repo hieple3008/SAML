@@ -1,0 +1,27 @@
+{
+    "strict": true,
+    "debug": true,
+    "sp": {
+        "entityId": "http://localhost:5000",
+        "assertionConsumerService": {
+            "url": "http://localhost:5000/?acs=true",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        },
+        "singleLogoutService": {
+            "url": "",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        },
+        "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
+        "x509cert": "cert.pem",
+        "privateKey": "privatekey.pem"
+    },
+    "idp": {
+        "entityId": "https://sts.windows.net/b77cc0b4-29c1-48c6-95fc-33791df200a3/",
+        "singleSignOnService": {
+            "url": "https://login.microsoftonline.com/b77cc0b4-29c1-48c6-95fc-33791df200a3/saml2",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        },
+        
+        "x509cert": "MIIC8DCCAdigAwIBAgIQHfyBtWQKYrRFvekKpRWK2TANBgkqhkiG9w0BAQsFADA0MTIwMAYDVQQDEylNaWNyb3NvZnQgQXp1cmUgRmVkZXJhdGVkIFNTTyBDZXJ0aWZpY2F0ZTAeFw0yNDAxMjYwMjQ3NTRaFw0yNzAxMjYwMjQ3NTNaMDQxMjAwBgNVBAMTKU1pY3Jvc29mdCBBenVyZSBGZWRlcmF0ZWQgU1NPIENlcnRpZmljYXRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvC8AIo0tjBpuC0yWZkNzXvDbfKrOjzeWlc"
+    }
+}
