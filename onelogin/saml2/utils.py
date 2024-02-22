@@ -1006,6 +1006,45 @@ class OneLogin_Saml2_Utils(object):
         dsig_ctx = xmlsec.SignatureContext()
         dsig_ctx.key = xmlsec.Key.from_memory(key, xmlsec.KeyFormat.PEM, None)
         return dsig_ctx.sign_binary(compat.to_bytes(msg), algorithm)
+    
+    
+    @staticmethod
+    def verify(xml, cert_path):
+        # case we don't need it.
+        import xmlsec
+
+        # Find the <Signature/> node.
+        signature_node = xmlsec.tree.find_node(xml, xmlsec.Node.SIGNATURE)
+        if signature_node is None:
+            # No `signature` node found; we cannot verify
+            return False
+
+        # Create a digital signature context (no key manager is needed).
+        ctx = xmlsec.SignatureContext()
+
+        # Register <Response/> and <Assertion/>
+        ctx.register_id(xml)
+        for assertion in xml.xpath("//*[local-name()='Assertion']"):
+            ctx.register_id(assertion)
+
+        # Load the public key.
+        key = None
+        # key = xmlsec.Key.from_file(cert_path, xmlsec.KeyFormat.PEM, None)
+        key = xmlsec.Key.from_file(cert_path, xmlsec.KeyFormat.CERT_PEM, None)
+
+        # Set the key on the context.
+        ctx.key = key
+
+        # Verify the signature.
+        try:
+            ctx.verify(signature_node)
+
+            return True
+
+        except Exception as e:
+            return False
+
+    
 
     @staticmethod
     def validate_binary_sign(signed_query, signature, cert=None, algorithm=OneLogin_Saml2_Constants.RSA_SHA256, debug=False, signature_node=None):
@@ -1032,30 +1071,44 @@ class OneLogin_Saml2_Utils(object):
         from lxml import etree
         xmlsec.enable_debug_trace(debug)
         dsig_ctx = xmlsec.SignatureContext()
-        cert = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'di-azure-ad.cer')
+        cert = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'di-azure-ad.pem')
         check = os.path.exists(cert)
         if (check):
-            dsig_ctx.key = xmlsec.Key.from_file(cert, xmlsec.KeyFormat.CERT_DER, None)
+            dsig_ctx.key = xmlsec.Key.from_file(cert, xmlsec.KeyFormat.CERT_PEM, None)
         else:
             raise Exception("Not found certificate key.")
-        signature_nodes = signature_node.xpath("//ds:Signature", namespaces={'ds': 'http://www.w3.org/2000/09/xmldsig#'})
-
-        if signature_nodes:
-            # Chỉ xác thực nếu tìm thấy ít nhất một phần tử Signature
-            for signature_nodez in signature_nodes:
-                try:
-                    # Xác thực chữ ký số
-                    signature = dsig_ctx.sign(signature_node)
-                    dsig_ctx.verify(signature_nodez)
-                    return True
-                except xmlsec.Error as e:
-                    if debug:
-                        print(e)
-                    continue
-        
-                # Kiểm tra kết quả xác thực
-        else:
-            print("No Signature element found in SAML Response.")
+        decoded_saml_response = """
+        <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+  <ds:SignedInfo>
+    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+    <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+    <ds:Reference URI="#_bd18a72d-82c6-4d22-a759-29e768a38846">
+      <ds:Transforms>
+        <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+        <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      </ds:Transforms>
+      <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+      <ds:DigestValue>Base64EncodedDigestValueHere</ds:DigestValue>
+    </ds:Reference>
+  </ds:SignedInfo>
+  <ds:SignatureValue>Base64EncodedSignatureValueHere</ds:SignatureValue>
+  <ds:KeyInfo>
+    <ds:X509Data>
+      <ds:X509Certificate>Base64EncodedX509CertificateHere</ds:X509Certificate>
+    </ds:X509Data>
+  </ds:KeyInfo>
+</ds:Signature>
+        """
+        signature_element = etree.fromstring(decoded_saml_response)
+        signature_n = xmlsec.tree.find_node(signature_element, xmlsec.Node.SIGNATURE)
+        try:
+            # Xác thực chữ ký số
+            signature = dsig_ctx.sign(signature_n)
+            dsig_ctx.verify(signature_n)
+            return True
+        except xmlsec.Error as e:
+            if debug:
+                print(e)
         
 
     @staticmethod

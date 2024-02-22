@@ -41,7 +41,8 @@ def index():
     success_slo = False
     attributes = False
     paint_logout = False
-
+    from lxml import etree
+    from base64 import b64decode
     if 'sso' in request.args:
         return redirect(auth.login())
         # If AuthNRequest ID need to be stored in order to later validate it, do instead

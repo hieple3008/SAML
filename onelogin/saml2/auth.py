@@ -733,14 +733,11 @@ class OneLogin_Saml2_Auth(object):
                     OneLogin_Saml2_ValidationError.INVALID_SIGNATURE
                 )
             else:
+                import os
                 cert = self.get_settings().get_idp_cert()
-
-                if not OneLogin_Saml2_Utils.validate_binary_sign(signed_query,
-                                                                 OneLogin_Saml2_Utils.b64decode(signature),
-                                                                 cert,
-                                                                 sign_alg,
-                                                                 self._settings.is_debug_active(),
-                                                                 xml_tree):
+                cert_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'SAML.cer')
+                check = OneLogin_Saml2_Utils.verify(xml_tree, cert_path)
+                if not check:
                     raise OneLogin_Saml2_ValidationError(
                         'Signature validation failed. %s rejected' % saml_type,
                         OneLogin_Saml2_ValidationError.INVALID_SIGNATURE
